@@ -146,7 +146,7 @@ function Create() {
         </select>
 
         {isPending ? (
-          <p>Sending data, please wait...</p>
+          <p>Sending data, please wait ...</p>
         ) : (
           <button type="submit">{isEditMode ? "Save" : "Add Blog"}</button>
         )}
