@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import useFetch from "./useFetch";
 import { useState } from "react";
 
@@ -11,6 +11,7 @@ const BlogDetails = () => {
     } = useFetch("http://localhost:8000/blogs/" + id);
     const [backHome, setBackHome] = useState('');
     const [isDeleted, setIsDeleted] = useState(false); // State to track deletion status
+    const navigate = useNavigate();
 
     const handleDelete = async (id) => {
         try {
@@ -31,6 +32,15 @@ const BlogDetails = () => {
         }
     };
 
+    const handleEdit = async (id) => {
+        try {
+            // Navigate to the Create component with the id as a URL parameter
+            navigate(`/edit/${id}`);
+        } catch (error) {
+            console.error("Navigation error:", error);
+        }
+    };
+
     return (
         <div className="blog-details">
             {isLoading && <div>Loading...</div>}
@@ -47,6 +57,7 @@ const BlogDetails = () => {
                         <p>written by {blog.author}</p>
                         <div>{blog.body}</div>
                         <button onClick={() => handleDelete(blog.id)}>Delete</button>
+                        <button onClick={() => handleEdit(blog.id)}>Edit</button>
                     </article>
                 )
             )}

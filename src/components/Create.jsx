@@ -1,122 +1,160 @@
-import { useNavigate } from 'react-router-dom';
-
-// const Create = () => {
-//     return <div className="create">
-//         <h2>Create a new blog</h2>
-
-//     </div>;
-// }
-
-// export default Create;
-
-import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 function Create() {
-    const [title, setTitle] = useState("");
-    const [body, setBody] = useState("");
-    const [author, setAuthor] = useState("mario");
+  const { id } = useParams();
 
-    const [isPending, setIsPending] = useState(false); // Added isPending state
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [author, setAuthor] = useState("mario");
 
-    const navigate_ = useNavigate(); // Access the history object
+  const [isPending, setIsPending] = useState(false); // Added isPending state
 
+  const [error, setError] = useState(null);
 
-    const handleChange = (event) => {
-        const { name, value } = event.target;
-        if (name === "title") {
-            setTitle(value);
-        } else if (name === "body") {
-            setBody(value);
-        } else if (name === "author") {
-            setAuthor(value);
+  const navigate = useNavigate(); // Access the history object
+
+  // Determine whether you're in "edit" mode based on the presence of id
+  const isEditMode = !!id;
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    if (name === "title") {
+      setTitle(value);
+    } else if (name === "body") {
+      setBody(value);
+    } else if (name === "author") {
+      setAuthor(value);
+    }
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setIsPending(true); // Set isPending to true while the request is pending
+
+    const blog = { title, body, author };
+    try {
+      if (isEditMode) {
+        // If in "edit" mode, send a PUT or PATCH request to update the existing blog post
+        const response = await fetch(`http://localhost:8000/blogs/${id}`, {
+          method: "PUT", // Use PUT or PATCH for updates
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(blog),
+        });
+
+        if (response.ok) {
+          console.log(`Blog with ID ${id} updated successfully!`);
+          navigate(`/blogs/${id}`);
+        } else {
+          console.error(`Error updating blog with ID ${id}.`);
         }
+      } else {
+        // If in "create" mode, send a POST request to create a new blog post
+        const response = await fetch("http://localhost:8000/blogs", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(blog),
+        });
+
+        if (response.ok) {
+          const newBlog = await response.json(); // Parse the response to get the newly created blog
+          console.log("New blog created:", newBlog);
+
+          // Redirect to the new blog's URL
+          navigate(`/blogs/${newBlog.id}`);
+        } else {
+          console.error("Error creating a new blog.");
+        }
+      }
+    } catch (error) {
+      // Handle network errors
+      console.error("Network error:", error);
+    } finally {
+      setIsPending(false); // Set isPending to false after the request completes
+      console.log("im still here");
+    }
+    // navigate("/");
+  };
+
+  useEffect(() => {
+    // Fetch the existing blog post data based on the id
+    const fetchBlogData = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/blogs/${id}`);
+        if (response.ok) {
+          const blogData = await response.json();
+          setTitle(blogData.title);
+          setBody(blogData.body);
+          setAuthor(blogData.author);
+        } else {
+          // Handle the error and set the error message
+          setError("Error fetching blog data. Please try again later.");
+      }
+  } catch (error) {
+      // Handle network errors and set the error message
+      setError("Network error. Please check your internet connection.");
+  }
+
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        setIsPending(true); // Set isPending to true while the request is pending
+    // Call the fetchBlogData function when id changes (component mounts or id changes)
+    if (isEditMode) {
+      fetchBlogData();
+    }
+  }, [id, isEditMode]);
 
-        const blog = { title, body, author };
-            try {
-                const response = await fetch("http://localhost:8000/blogs", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(blog),
-                });
+  return (
+    <div className="create">
+      
+      {!error && (<form onSubmit={handleSubmit}>
+      <h2>Create Blog</h2>
+        <label htmlFor="text_field">Title</label>
+        <input
+          type="text"
+          id="text_field"
+          name="title"
+          placeholder="Enter title"
+          value={title}
+          onChange={handleChange}
+          required
+        />
+        <label htmlFor="textarea">Body</label>
+        <textarea
+          id="textarea"
+          name="body"
+          rows="10"
+          cols="50"
+          placeholder="Enter body"
+          value={body}
+          onChange={handleChange}
+          required
+        ></textarea>
+        <label htmlFor="select_option">Author</label>
+        <select
+          id="select_option"
+          name="author"
+          value={author}
+          onChange={handleChange}
+          required
+        >
+          <option value="mario">mario</option>
+          <option value="yushi">yushi</option>
+        </select>
 
-                if (response.ok) {
-                    // Handle success, e.g., show a success 
-                    const newBlog = await response.json(); // Parse the response to get the newly created blog
-                    console.log('New blog created:', newBlog);
-
-                // Redirect to the new blog's URL
-                    navigate_(`/blogs/${newBlog.id}`);
-
-                } else {
-                    // Handle errors, e.g., show an error message
-                    alert("Error sending data.");
-                }
-            } catch (error) {
-                // Handle network errors
-                console.error("Network error:", error);
-            } finally {
-               // setIsPending(false); // Set isPending to false after the request completes
-                console.log('im still here')
-
-            }
-        // navigate_("/");
-
-    };
-    return (
-        <div className="create">
-            <h2>Sample Form</h2>
-            <form onSubmit={handleSubmit}>
-                <label htmlFor="text_field">Title</label>
-                <input
-                    type="text"
-                    id="text_field"
-                    name="title"
-                    placeholder="Enter title"
-                    value={title}
-                    onChange={handleChange}
-                    required
-                />
-                <br />
-                <br />
-                <label htmlFor="textarea">Body</label>
-                <textarea
-                    id="textarea"
-                    name="body"
-                    rows="4"
-                    cols="50"
-                    placeholder="Enter body"
-                    value={body}
-                    onChange={handleChange}
-                    required
-                ></textarea>
-                <br />
-                <br />
-                <label htmlFor="select_option">Author</label>
-                <select
-                    id="select_option"
-                    name="author"
-                    value={author}
-                    onChange={handleChange}
-                    required
-                >
-                    <option value="mario">mario</option>
-                    <option value="yushi">yushi</option>
-                </select>
-                <br />
-                <br />
-                {!isPending && <button type="submit">Add Blog</button>}
-                {isPending && <p>Sending data, please wait...</p>}{" "}
-            </form>
-            {/* Loading message when isPending is true */}
-        </div>
-    );
+        {isPending ? (
+          <p>Sending data, please wait...</p>
+        ) : (
+          <button type="submit">{isEditMode ? "Save" : "Add Blog"}</button>
+        )}
+        {/* <h2>{error}</h2> */}
+      </form>)}
+      {error && <h2>{error}</h2>}
+    </div>
+  );
 }
 
 export default Create;
